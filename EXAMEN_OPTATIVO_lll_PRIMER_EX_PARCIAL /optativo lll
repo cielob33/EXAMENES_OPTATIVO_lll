@@ -1,0 +1,445 @@
+•	CREAR UNA CLASE DE CONEXIÓN A LA BASE DE DATOS.
+using Npgsql;
+
+public class ConexionBD
+{
+    private string connectionString;
+    private NpgsqlConnection connection;
+
+    public ConexionBD()
+    {
+        connectionString = "Host=cielo;Username=cielobenitez;Password=sasha2023;Database=parcial1";
+        connection = new NpgsqlConnection(connectionString);
+    }
+
+    public NpgsqlConnection ObtenerConexion()
+    {
+        return connection;
+    }
+•	CREAMOS LAS CLASES MODELOS PARA CLIENTE Y FACTURA.
+
+}
+public class Cliente
+{
+    public int Id { get; set; }
+    public int Id_Banco { get; set; }
+    public string Nombre { get; set; }
+    public string Apellido { get; set; }
+    public string Documento { get; set; }
+    public string Direccion { get; set; }
+    public string Mail { get; set; }
+    public string Celular { get; set; }
+    public string Estado { get; set; }
+}
+
+public class Factura
+{
+    public int Id { get; set; }
+    public int Id_Cliente { get; set; }
+    public string Nro_Factura { get; set; }
+    public DateTime Fecha_Hora { get; set; }
+    public decimal Total_Total_iva5 { get; set; }
+    public decimal Total_iva10 { get; set; }
+    public decimal Total_iva { get; set; }
+    public string Total_letras { get; set; }
+    public string Sucursal { get; set; }
+}
+•	CREAR LAS CLASES DE CONEXIÓN A LA DB PARA LOS MÉTODOS CRUD Y LISTADOS.
+using Npgsql;
+using System;
+using System.Collections.Generic;
+
+public class ClienteRepository
+{
+    private ConexionBD conexion;
+
+    public ClienteRepository()
+    {
+        conexion = new ConexionBD();
+    }
+
+    public void AgregarCliente(Cliente cliente)
+    {
+        conexion.AbrirConexion();
+        conexion.CerrarConexion();
+    }
+
+    public void ActualizarCliente(Cliente cliente)
+    {
+        conexion.AbrirConexion();
+        conexion.CerrarConexion();
+    }
+
+    public void EliminarCliente(int id)
+    {
+        conexion.AbrirConexion();
+        conexion.CerrarConexion();
+    }
+
+    public Cliente ObtenerCliente(int id)
+    {
+        conexion.AbrirConexion();
+        conexion.CerrarConexion();
+        return new Cliente(); 
+    }
+
+    public List<Cliente> ListarClientes()
+    {
+        conexion.AbrirConexion();
+        conexion.CerrarConexion();
+        return new List<Cliente>(); 
+    }
+}
+
+public class FacturaRepository
+{
+    private ConexionBD conexion;
+
+    public FacturaRepository()
+    {
+        conexion = new ConexionBD();
+    }
+
+    public void AgregarFactura(Factura factura)
+    {
+        conexion.AbrirConexion();
+        conexion.CerrarConexion();
+    }
+
+ClienteRepository
+}
+	CREAR UN PROYECTO DE TIPO BIBLIOTECA DE CLASES Y DESARROLLAR LA LÓGICA Y REGLAS DE NEGOCIO:
+public class ServicioCliente
+{
+    public bool ValidarCliente(Cliente cliente)
+    {
+        if (string.IsNullOrEmpty(cliente.Nombre) || cliente.Nombre.Length < 3 ||
+            string.IsNullOrEmpty(cliente.Apellido) || cliente.Apellido.Length < 3 ||
+            string.IsNullOrEmpty(cliente.Documento) || cliente.Documento.Length < 3)
+        {
+            return false;
+        }
+
+        if (!EsNumero(cliente.Celular) || cliente.Celular.Length != 10)
+        {
+            return false;
+        }
+
+
+        return true;
+    }
+
+    private bool EsNumero(string valor)
+    {
+        foreach (char c in valor)
+        {
+            if (!char.IsDigit(c))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+public class ServicioFactura
+{
+    public bool ValidarFactura(Factura factura)
+    {
+        return true;
+    }
+}
+class Program
+{
+    static void Main(string[] args)
+    {
+        
+        ClienteRepository clienteRepository = new ClienteRepository();
+        FacturaRepository facturaRepository = new FacturaRepository();
+        ServicioCliente servicioCliente = new ServicioCliente();
+        ServicioFactura servicioFactura = new ServicioFactura();
+
+        Cliente nuevoCliente = new Cliente
+        {
+            Nombre = "Juan",
+            Apellido = "Pérez",
+            Documento = "12345678",
+            Celular = "0987654321"
+        };
+
+        if (servicioCliente.ValidarCliente(nuevoCliente))
+        {
+            clienteRepository.AgregarCliente(nuevoCliente);
+            Console.WriteLine("Cliente agregado correctamente.");
+        }
+        else
+        {
+            Console.WriteLine("Error: Cliente no válido.");
+        }
+
+        List<Cliente> clientes = clienteRepository.ListarClientes();
+        Console.WriteLine("Clientes registrados:");
+        foreach (var cliente in clientes)
+        {
+            Console.WriteLine($"ID: {cliente.Id}, Nombre: {cliente.Nombre}, Apellido: {cliente.Apellido}");
+        }
+
+
+        Console.ReadKey(); 
+    }
+}
+•	CREAR LA CLASE SERVICIO CLIENTE PARA LAS SIGUIENTES VALIDACIONES.
+public class ClienteRepository
+{
+    private ConexionBD conexion;
+
+    public ClienteRepository()
+    {
+        conexion = new ConexionBD();
+    }
+
+    public void AgregarCliente(Cliente cliente)
+    {
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "INSERT INTO clientes (id_banco, nombre, apellido, documento, direccion, mail, celular, estado) " +
+                              "VALUES (@id_banco, @nombre, @apellido, @documento, @direccion, @mail, @celular, @estado)";
+            cmd.Parameters.AddWithValue("@id_banco", cliente.Id_Banco);
+            cmd.Parameters.AddWithValue("@nombre", cliente.Nombre);
+            cmd.Parameters.AddWithValue("@apellido", cliente.Apellido);
+            cmd.Parameters.AddWithValue("@documento", cliente.Documento);
+            cmd.Parameters.AddWithValue("@direccion", cliente.Direccion);
+            cmd.Parameters.AddWithValue("@mail", cliente.Mail);
+            cmd.Parameters.AddWithValue("@celular", cliente.Celular);
+            cmd.Parameters.AddWithValue("@estado", cliente.Estado);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void ActualizarCliente(Cliente cliente)
+    {
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "UPDATE clientes SET id_banco = @id_banco, nombre = @nombre, apellido = @apellido, " +
+                              "direccion = @direccion, mail = @mail, celular = @celular, estado = @estado " +
+                              "WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id_banco", cliente.Id_Banco);
+            cmd.Parameters.AddWithValue("@nombre", cliente.Nombre);
+            cmd.Parameters.AddWithValue("@apellido", cliente.Apellido);
+            cmd.Parameters.AddWithValue("@direccion", cliente.Direccion);
+            cmd.Parameters.AddWithValue("@mail", cliente.Mail);
+            cmd.Parameters.AddWithValue("@celular", cliente.Celular);
+            cmd.Parameters.AddWithValue("@estado", cliente.Estado);
+            cmd.Parameters.AddWithValue("@id", cliente.Id);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void EliminarCliente(int id)
+    {
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "DELETE FROM clientes WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public Cliente ObtenerCliente(int id)
+    {
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "SELECT * FROM clientes WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+
+            using (NpgsqlDataReader reader = cmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    return new Cliente
+                    {
+                        Id = Convert.ToInt32(reader["id"]),
+                        Id_Banco = Convert.ToInt32(reader["id_banco"]),
+                        Nombre = reader["nombre"].ToString(),
+                        Apellido = reader["apellido"].ToString(),
+                        Documento = reader["documento"].ToString(),
+                        Direccion = reader["direccion"].ToString(),
+                        Mail = reader["mail"].ToString(),
+                        Celular = reader["celular"].ToString(),
+                        Estado = reader["estado"].ToString()
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public List<Cliente> ListarClientes()
+    {
+        List<Cliente> clientes = new List<Cliente>();
+
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "SELECT * FROM clientes";
+
+            using (NpgsqlDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    clientes.Add(new Cliente
+                    {
+                        Id = Convert.ToInt32(reader["id"]),
+                        Id_Banco = Convert.ToInt32(reader["id_banco"]),
+                        Nombre = reader["nombre"].ToString(),
+                        Apellido = reader["apellido"].ToString(),
+                        Documento = reader["documento"].ToString(),
+                        Direccion = reader["direccion"].ToString(),
+                        Mail = reader["mail"].ToString(),
+                        Celular = reader["celular"].ToString(),
+                        Estado = reader["estado"].ToString()
+                    });
+                }
+            }
+        }
+
+        return clientes;
+    }
+}
+•	DESARROLLAR LA CLASE SERVICIO FACTURA PARA LAS SIGUIENTES VALIDACIONES.
+public class FacturaRepository
+{
+    private ConexionBD conexion;
+
+    public FacturaRepository()
+    {
+        conexion = new ConexionBD();
+    }
+
+    public void AgregarFactura(Factura factura)
+    {
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "INSERT INTO facturas (id_cliente, nro_factura, fecha_hora, total_total_iva5, total_iva10, total_iva, total_letras, sucursal) " +
+                              "VALUES (@id_cliente, @nro_factura, @fecha_hora, @total_total_iva5, @total_iva10, @total_iva, @total_letras, @sucursal)";
+            cmd.Parameters.AddWithValue("@id_cliente", factura.Id_Cliente);
+            cmd.Parameters.AddWithValue("@nro_factura", factura.Nro_Factura);
+            cmd.Parameters.AddWithValue("@fecha_hora", factura.Fecha_Hora);
+            cmd.Parameters.AddWithValue("@total_total_iva5", factura.Total_Total_iva5);
+            cmd.Parameters.AddWithValue("@total_iva10", factura.Total_iva10);
+            cmd.Parameters.AddWithValue("@total_iva", factura.Total_iva);
+            cmd.Parameters.AddWithValue("@total_letras", factura.Total_letras);
+            cmd.Parameters.AddWithValue("@sucursal", factura.Sucursal);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void ActualizarFactura(Factura factura)
+    {
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "UPDATE facturas SET id_cliente = @id_cliente, nro_factura = @nro_factura, fecha_hora = @fecha_hora, " +
+                              "total_total_iva5 = @total_total_iva5, total_iva10 = @total_iva10, total_iva = @total_iva, " +
+                              "total_letras = @total_letras, sucursal = @sucursal WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id_cliente", factura.Id_Cliente);
+            cmd.Parameters.AddWithValue("@nro_factura", factura.Nro_Factura);
+            cmd.Parameters.AddWithValue("@fecha_hora", factura.Fecha_Hora);
+            cmd.Parameters.AddWithValue("@total_total_iva5", factura.Total_Total_iva5);
+            cmd.Parameters.AddWithValue("@total_iva10", factura.Total_iva10);
+            cmd.Parameters.AddWithValue("@total_iva", factura.Total_iva);
+            cmd.Parameters.AddWithValue("@total_letras", factura.Total_letras);
+            cmd.Parameters.AddWithValue("@sucursal", factura.Sucursal);
+            cmd.Parameters.AddWithValue("@id", factura.Id);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void EliminarFactura(int id)
+    {
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "DELETE FROM facturas WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public Factura ObtenerFactura(int id)
+    {
+        Factura factura = null;
+
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "SELECT * FROM facturas WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+
+            using (NpgsqlDataReader reader = cmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    factura = new Factura
+                    {
+                        Id = Convert.ToInt32(reader["id"]),
+                        Id_Cliente = Convert.ToInt32(reader["id_cliente"]),
+                        Nro_Factura = reader["nro_factura"].ToString(),
+                        Fecha_Hora = Convert.ToDateTime(reader["fecha_hora"]),
+                        Total_Total_iva5 = Convert.ToDecimal(reader["total_total_iva5"]),
+                        Total_iva10 = Convert.ToDecimal(reader["total_iva10"]),
+                        Total_iva = Convert.ToDecimal(reader["total_iva"]),
+                        Total_letras = reader["total_letras"].ToString(),
+                        Sucursal = reader["sucursal"].ToString()
+                    };
+                }
+            }
+        }
+
+        return factura;
+    }
+
+    public List<Factura> ListarFacturas()
+    {
+        List<Factura> facturas = new List<Factura>();
+
+        using (NpgsqlCommand cmd = new NpgsqlCommand())
+        {
+            cmd.Connection = conexion.ObtenerConexion();
+            cmd.CommandText = "SELECT * FROM facturas";
+
+            using (NpgsqlDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    facturas.Add(new Factura
+                    {
+                        Id = Convert.ToInt32(reader["id"]),
+                        Id_Cliente = Convert.ToInt32(reader["id_cliente"]),
+                        Nro_Factura = reader["nro_factura"].ToString(),
+                        Fecha_Hora = Convert.ToDateTime(reader["fecha_hora"]),
+                        Total_Total_iva5 = Convert.ToDecimal(reader["total_total_iva5"]),
+                        Total_iva10 = Convert.ToDecimal(reader["total_iva10"]),
+                        Total_iva = Convert.ToDecimal(reader["total_iva"]),
+                        Total_letras = reader["total_letras"].ToString(),
+                        Sucursal = reader["sucursal"].ToString()
+                    });
+                }
+            }
+        }
+
+        return facturas;
+    }
+}
