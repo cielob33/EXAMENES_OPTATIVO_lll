@@ -1,0 +1,206 @@
+using Npgsql;
+
+public class ConexionBD
+{
+    private string connectionString;
+    private NpgsqlConnection connection;
+
+    public ConexionBD()
+    {
+        connectionString = "Host=cielo;Username=cielobenitez;Password=sasha2023;Database=parcial1";
+        connection = new NpgsqlConnection(connectionString);
+    }
+
+    public NpgsqlConnection ObtenerConexion()
+    {
+        return connection;
+    }
+}
+public class Cliente
+{
+    public int Id { get; set; }
+    public int Id_Banco { get; set; }
+    public string Nombre { get; set; }
+    public string Apellido { get; set; }
+    public string Documento { get; set; }
+    public string Direccion { get; set; }
+    public string Mail { get; set; }
+    public string Celular { get; set; }
+    public string Estado { get; set; }
+}
+
+public class Factura
+{
+    public int Id { get; set; }
+    public int Id_Cliente { get; set; }
+    public string Nro_Factura { get; set; }
+    public DateTime Fecha_Hora { get; set; }
+    public decimal Total_Total_iva5 { get; set; }
+    public decimal Total_iva10 { get; set; }
+    public decimal Total_iva { get; set; }
+    public string Total_letras { get; set; }
+    public string Sucursal { get; set; }
+}
+using System.Collections.Generic;
+using Dapper;
+
+public class FacturaRepository
+{
+    private readonly DbConnection _dbConnection;
+
+    public FacturaRepository(DbConnection dbConnection)
+    {
+        _dbConnection = dbConnection;
+    }
+
+    public void Add(Factura factura)
+    {
+        using (var connection = _dbConnection.CreateConnection())
+        {
+            var query = "INSERT INTO Factura (id_cliente, nro_factura, fecha_hora, total_total_iva5, total_iva10, total_iva, total_letras, sucursal) VALUES (@IdCliente, @NroFactura, @FechaHora, @TotalTotalIva5, @TotalIva10, @TotalIva, @TotalLetras, @Sucursal)";
+            connection.Execute(query, factura);
+        }
+    }
+
+    public void Update(Factura factura)
+    {
+        using (var connection = _dbConnection.CreateConnection())
+        {
+            var query = "UPDATE Factura SET id_cliente = @IdCliente, nro_factura = @NroFactura, fecha_hora = @FechaHora, total_total_iva5 = @TotalTotalIva5, total_iva10 = @TotalIva10, total_iva = @TotalIva, total_letras = @TotalLetras, sucursal = @Sucursal WHERE Id = @Id";
+            connection.Execute(query, factura);
+        }
+    }
+
+    public void Delete(int id)
+    {
+        using (var connection = _dbConnection.CreateConnection())
+        {
+            var query = "DELETE FROM Factura WHERE Id = @Id";
+            connection.Execute(query, new { Id = id });
+        }
+    }
+
+    public Factura Get(int id)
+    {
+        using (var connection = _dbConnection.CreateConnection())
+        {
+            var query = "SELECT * FROM Factura WHERE Id = @Id";
+            return connection.QuerySingleOrDefault<Factura>(query, new { Id = id });
+        }
+    }
+
+    public IEnumerable<Factura> List()
+    {
+        using (var connection = _dbConnection.CreateConnection())
+        {
+            var query = "SELECT * FROM Factura";
+            return connection.Query<Factura>(query);
+        }
+    }
+}
+
+using System;
+using System.Collections.Generic;
+
+public class ClienteService
+{
+    private readonly ClienteRepository _clienteRepository;
+
+    public ClienteService(ClienteRepository clienteRepository)
+    {
+        _clienteRepository = clienteRepository;
+    }
+
+    public void Add(Cliente cliente)
+    {
+        ValidateCliente(cliente);
+        _clienteRepository.Add(cliente);
+    }
+
+    public void Update(Cliente cliente)
+    {
+        ValidateCliente(cliente);
+        _clienteRepository.Update(cliente);
+    }
+
+    public void Delete(int id)
+    {
+        _clienteRepository.Delete(id);
+    }
+
+    public Cliente Get(int id)
+    {
+        return _clienteRepository.Get(id);
+    }
+
+    public IEnumerable<Cliente> List()
+    {
+        return _clienteRepository.List();
+    }
+
+    private void ValidateCliente(Cliente cliente)
+    {
+        if (string.IsNullOrWhiteSpace(cliente.Nombre) || cliente.Nombre.Length < 3)
+            throw new ArgumentException("El nombre es obligatorio y debe tener al menos 3 caracteres.");
+        
+        if (string.IsNullOrWhiteSpace(cliente.Apellido) || cliente.Apellido.Length < 3)
+            throw new ArgumentException("El apellido es obligatorio y debe tener al menos 3 caracteres.");
+        
+        if (string.IsNullOrWhiteSpace(cliente.Documento))
+            throw new ArgumentException("El documento es obligatorio.");
+        
+        if (cliente.Celular.ToString().Length != 10)
+            throw new ArgumentException("El celular debe tener 10 caracteres numéricos.");
+    }
+}
+
+using System;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        string connectionString = "Host=cielo;Username=cielobenitez;Password=sasha2023;Database=parcial1";
+        DbConnection dbConnection = new DbConnection(connectionString);
+
+        ClienteRepository clienteRepository = new ClienteRepository(dbConnection);
+        FacturaRepository facturaRepository = new FacturaRepository(dbConnection);
+
+        ClienteService clienteService = new ClienteService(clienteRepository);
+        FacturaService facturaService = new FacturaService(facturaRepository);
+
+        // Crear y listar clientes
+        var nuevoCliente = new Cliente
+        {
+            IdBanco = 1,
+            Nombre = "Juan",
+            Apellido = "Perez",
+            Documento = "8",
+            Direccion = "Calle Falsa 123",
+            Mail = "juan@example.com",
+            Celular = 0987654321,
+            Estado = "Activo"
+        };
+
+        clienteService.Add(nuevoCliente);
+        var cliente = clienteService.Get(1);
+        Console.WriteLine($"Cliente: {cliente.Nombre} {cliente.Apellido}");
+
+        // Crear y listar facturas
+        var nuevaFactura = new Factura
+        {
+            IdCliente = 1,
+            NroFactura = "001-001-000001",
+            FechaHora = DateTime.Now,
+            TotalTotalIva5 = 1000,
+            TotalIva10 = 2000,
+            TotalIva = 3000,
+            TotalLetras = "Tres mil",
+            Sucursal = "Sucursal A"
+        };
+
+        facturaService.Add(nuevaFactura);
+        var factura = facturaService.Get(1);
+        Console.WriteLine($"Factura: {factura.NroFactura}, Total: {factura.TotalIva}");
+    }
+}
